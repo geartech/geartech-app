@@ -1,0 +1,184 @@
+/* DATABASE geartech */
+CREATE DATABASE geartech
+    WITH 
+    OWNER = geartech
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'Portuguese_Brazil.1252'
+    LC_CTYPE = 'Portuguese_Brazil.1252'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1;
+
+GRANT ALL ON DATABASE geartech TO geartech WITH GRANT OPTION;
+
+
+/* TABLE Companies */
+CREATE TABLE companies (
+    id serial NOT NULL,
+	dthrCreate timestamp(6) NOT NULL,
+	codUserCreate character varying(20) NOT NULL,
+	dthrLastUpdate timestamp(6) NOT NULL,
+	codUserLastUpdate character varying(20) NOT NULL,
+    version int NOT NULL,
+    id_Parent int,
+	code character varying(10) NOT NULL,
+	codeExternal character varying(10),
+	name character varying(150) NOT NULL,
+	identificationNumber int,
+	contacts character varying(500),
+	complement character varying(500),
+    active boolean NOT NULL DEFAULT true,
+    CONSTRAINT pk_company PRIMARY KEY (id)
+);
+ALTER TABLE companies ADD CONSTRAINT fk_parent FOREIGN KEY (id_Parent) REFERENCES core.companies(id);
+
+/* TABLE clients */
+CREATE TABLE clients (
+    id serial NOT NULL,
+	dthrCreate timestamp(6) NOT NULL,
+	codUserCreate character varying(20) NOT NULL,
+	dthrLastUpdate timestamp(6) NOT NULL,
+	codUserLastUpdate character varying(20) NOT NULL,
+    version int NOT NULL,
+	id_Company int NOT NULL,
+	code character varying(10) NOT NULL,
+	codeExternal character varying(10),
+	name character varying(150) NOT NULL,
+	identificationNumber int,
+	contacts character varying(500),
+	complement character varying(500),
+    active boolean NOT NULL DEFAULT true,
+    CONSTRAINT pk_clients PRIMARY KEY (id)
+);
+ALTER TABLE clients ADD CONSTRAINT fk_company FOREIGN KEY (id_Company) REFERENCES core.companies(id);
+
+/* TABLE centers */
+CREATE TABLE centers (
+    id serial NOT NULL,
+    id_Company int NOT NULL,
+	dthrCreate timestamp(6) NOT NULL,
+	codUserCreate character varying(20) NOT NULL,
+	dthrLastUpdate timestamp(6) NOT NULL,
+	codUserLastUpdate character varying(20) NOT NULL,
+    version int NOT NULL,
+    id_Parent int,
+	code character varying(10) NOT NULL,
+	codeExternal character varying(10),
+	name character varying(150) NOT NULL,
+	description character varying(300),
+	managementType character varying(25) NOT NULL,
+    active boolean NOT NULL DEFAULT true,
+    CONSTRAINT pk_center PRIMARY KEY (id)
+);
+ALTER TABLE centers ADD CONSTRAINT fk_parent FOREIGN KEY (id_Parent) REFERENCES core.centers(id);
+ALTER TABLE centers ADD CONSTRAINT fk_company FOREIGN KEY (id_Company) REFERENCES core.companies(id);
+
+/* TABLE users */
+CREATE TABLE users (
+    id serial NOT NULL,
+	dthrCreate timestamp(6) NOT NULL,
+	codUserCreate character varying(20) NOT NULL,
+	dthrLastUpdate timestamp(6) NOT NULL,
+	codUserLastUpdate character varying(20) NOT NULL,
+    version int NOT NULL,
+	personalNumber character varying(10),
+	name character varying(60) NOT NULL,
+	lastName character varying(20) NOT NULL,
+    mail character varying(200) NOT NULL,
+	phone varchar(20),
+    password character varying(20) NOT NULL,
+    expiration timestamp(6) NOT NULL,
+    resetPassword boolean NOT NULL,
+    active boolean NOT NULL DEFAULT true,
+    CONSTRAINT pk_user PRIMARY KEY (id)
+);
+-- Adiciona um indice para coluna 'mail'
+CREATE UNIQUE INDEX idx_user ON users(mail);
+-- Adiciona a restrição de chave única na coluna 'mail'
+ALTER TABLE users ADD CONSTRAINT uk_user_personalNumber UNIQUE (personalNumber);
+
+/* TABLE profiles */
+CREATE TABLE profiles (
+    id serial NOT NULL,
+	dthrCreate timestamp(6) NOT NULL,
+	codUserCreate character varying(20) NOT NULL,
+	dthrLastUpdate timestamp(6) NOT NULL,
+	codUserLastUpdate character varying(20) NOT NULL,
+    version int NOT NULL,
+    id_Parent int,
+	code character varying(40) NOT NULL,
+	name character varying(150) NOT NULL,
+    active boolean NOT NULL DEFAULT true,
+    CONSTRAINT pk_ptofile PRIMARY KEY (id)
+);
+ALTER TABLE profiles ADD CONSTRAINT fk_parent FOREIGN KEY (id_Parent) REFERENCES core.profiles(id);
+
+/* TABLE permissions */
+CREATE TABLE permissions (
+    id serial NOT NULL,
+	dthrCreate timestamp(6) NOT NULL,
+	codUserCreate character varying(20) NOT NULL,
+	dthrLastUpdate timestamp(6) NOT NULL,
+	codUserLastUpdate character varying(20) NOT NULL,
+    version int NOT NULL,
+	code character varying(40) NOT NULL,
+	name character varying(150) NOT NULL,
+    active boolean NOT NULL DEFAULT true,
+    CONSTRAINT pk_permission PRIMARY KEY (id)
+);
+
+/* TABLE profiles_permissions */
+CREATE TABLE profiles_permissions (
+    id serial NOT NULL,
+	dthrCreate timestamp(6) NOT NULL,
+	codUserCreate character varying(20) NOT NULL,
+	id_Profile int NOT NULL, 
+	id_Permission int NOT NULL, 
+    CONSTRAINT pk_profile_permission PRIMARY KEY (id),
+	CONSTRAINT fk_profile_permission1 FOREIGN KEY(id_Profile) REFERENCES core.profiles(id),
+	CONSTRAINT fk_profile_permission2 FOREIGN KEY(id_Permission) REFERENCES core.permissions(id)
+);
+
+/* TABLE users_profiles */
+CREATE TABLE users_profiles (
+    id serial NOT NULL,
+	dthrCreate timestamp(6) NOT NULL,
+	codUserCreate character varying(20) NOT NULL,
+	id_User int NOT NULL, 
+	id_Profile int NOT NULL, 
+    CONSTRAINT pk_user_profile PRIMARY KEY (id),
+	CONSTRAINT fk_user_profile1 FOREIGN KEY(id_User) REFERENCES core.users(id),
+	CONSTRAINT fk_user_profile2 FOREIGN KEY(id_Profile) REFERENCES core.profiles(id)
+);
+
+/* TABLE users_centers */
+CREATE TABLE users_centers (
+    id serial NOT NULL,
+	dthrCreate timestamp(6) NOT NULL,
+	codUserCreate character varying(20) NOT NULL,
+	id_User int NOT NULL,
+    id_Center int NOT NULL, 
+    CONSTRAINT pk_user_center PRIMARY KEY (id),
+    CONSTRAINT fk_user_center1 FOREIGN KEY(id_User) REFERENCES core.users(id),
+    CONSTRAINT fk_user_center2 FOREIGN KEY(id_Center) REFERENCES core.centers(id)
+);
+
+/* TABLE users_permissions */
+CREATE TABLE users_permissions (
+    id serial NOT NULL,
+	dthrCreate timestamp(6) NOT NULL,
+	codUserCreate character varying(20) NOT NULL,
+	id_user int NOT NULL,
+    id_permission int NOT NULL, 
+    CONSTRAINT pk_user_permission PRIMARY KEY (id),
+    CONSTRAINT fk_user_permission1 FOREIGN KEY(id_user) REFERENCES core.users(id),
+    CONSTRAINT fk_user_permission2 FOREIGN KEY(id_permission) REFERENCES core.permissions(id)
+);
+
+CREATE TABLE refreshTokens (
+    id serial PRIMARY KEY,
+    token varchar(255) NOT NULL UNIQUE,
+    username varchar(255) NOT NULL,
+    expiry_date timestamp NOT NULL
+);
+
+
